@@ -1,0 +1,266 @@
+if (isTRUE(Sys.getenv("_R_ROI_NO_CHECK_SOLVERS_") == "")) {
+    Sys.setenv("ROI_LOAD_PLUGINS" = FALSE)
+}
+library(ROI)
+library(ROI.plugin.clarabel)
+
+check <- function(domain, condition, level=1, message="", call=sys.call(-1L)) {
+    if ( isTRUE(condition) ) return(invisible(NULL))
+    msg <- sprintf("in %s", domain)
+    if ( all(nchar(message) > 0) ) msg <- sprintf("%s\n\t%s", msg, message)
+    stop(msg)
+    return(invisible(NULL))
+}
+
+
+## SOCP - Example - 1
+## min:  1 x1 + 1 x2 + 1 x3
+## s.t.     x1 == sqrt(2)
+##          x1 >= ||(x2, x3)||
+##
+## c(sqrt(2), -1, -1)
+test_cp_01 <- function(solver) {
+    obj <- c(1, 1, 1)
+    A <- rbind(c(1, 0, 0))
+    b <- c(sqrt(2))
+    G <- diag(x=-1, 3)
+    h <- rep(0, 3)
+
+    bound <- V_bound(li = 1:3, lb = rep(-Inf, 3))
+
+    lc <- C_constraint(L = rbind(A, G), 
+                       cones = c(K_zero(1), K_soc(3)), 
+                       rhs = c(b, h))
+    x <- OP(objective = obj, constraints = lc, types = rep("C", 3),
+            bounds =  bound, maximum = FALSE)
+
+    opt <- ROI_solve(x, solver = solver)
+    
+    check("CP-01@01", equal(sum(abs(opt$solution - c(sqrt(2), -1, -1))), 0))
+    check("CP-01@02", equal(opt$objval, (sqrt(2) - 2)))
+}
+
+## SOCP - Example - 2
+## min:  0 x1 - 2 x2 - 2 x3 + 0 x4 - 2 x5 - 2 x6
+## s.t.     x1 == sqrt(2)
+##          x4 == sqrt(2)
+##          x1 >= ||(x2, x3)||
+##          x4 >= ||(x5, x6)||
+##
+## c(sqrt(2), 1, 1, sqrt(2), 1, 1)
+test_cp_02 <- function(solver) {
+    obj <- c(0, -2, -2, 0, -2, -2)
+    A <- rbind(c(1, 0, 0, 0, 0, 0),
+               c(0, 0, 0, 1, 0, 0))
+    b <- c(sqrt(2), sqrt(2))
+    G <- diag(x=-1, 6)
+    h <- rep(0, 6)
+
+    lc <- C_constraint(L = rbind(A, G), 
+                       cones = c(K_zero(2), K_soc(c(3, 3))), 
+                       rhs = c(b, h))
+    x <- OP(objective = obj, constraints = lc)
+
+    opt <- ROI_solve(x, solver=solver)
+    check("CP-02@01", equal(sum(abs(opt$solution - c(sqrt(2), 1, 1, sqrt(2), 1, 1))), 0))
+}
+
+## EXPP - Example - 1
+## min:  x + y + z
+## s.t.
+## y e^(x/y) <= z
+## y > 0
+## x := 1
+## y := 2
+## c(1, 2, 2*exp(1/2))
+test_cp_03 <- function(solver) {
+    obj <- c(1, 1, 1)
+    A <- rbind(c(1, 0, 0),
+               c(0, 1, 0))
+    b <- c(1, 2)
+    G <- -diag(3)
+    h <- rep(0, 3)
+
+    lc <- C_constraint(L = rbind(A, G), 
+                       cones = c(K_zero(2), K_expp(1)), 
+                       rhs = c(b, h))
+    x <- OP(objective = obj, constraints = lc)
+
+    opt <- ROI_solve(x, solver = solver)
+    check("CP-03@01", max(abs(opt$solution - c(1, 2, 2*exp(1/2)))) < 1e-3)
+}
+
+## EXPP - Example - 2
+## max:  x + y + z
+## s.t.
+## y e^(x/y) <= z
+## y > 0
+## y == 2
+## z == 2 * exp(1/2)
+## c(1, 2, 2*exp(1/2))
+test_cp_04 <- function(solver) {
+    obj <- c(1, 1, 1)
+    A <- rbind(c(0, 1, 0),
+               c(0, 0, 1))
+    b <- c(2, 2*exp(1/2))
+    G <- diag(x=-1, 3)
+    h <- rep(0, 3)
+
+    lc <- C_constraint(L = rbind(A, G), 
+                       cones = c(K_zero(2), K_expp(1)), 
+                       rhs = c(b, h))
+    x <- OP(objective = obj, constraints = lc, maximum = TRUE)
+
+    opt <- ROI_solve(x, solver=solver)
+    check("CP-04@01", equal(opt$solution , c(1, 2, 2*exp(1/2))))
+}
+
+## EXPP - Example - 3
+## max:  x + y + z
+## s.t.
+## y e^(x/y) <= z
+## y > 0
+## y == 1
+## z == exp(1)
+## c(1, 1, exp(1))
+test_cp_05 <- function(solver) {
+    obj <- c(1, 1, 1)
+    A <- rbind(c(0, 1, 0),
+               c(0, 0, 1))
+    b <- c(1, exp(1))
+    G <- diag(x=-1, 3)
+    h <- rep(0, 3)
+    ## cones <- list("free"=c(1, 2), "expp"=list(3:5))
+    ## bound <- as.C_bound(cones)
+
+    lc <- C_constraint(L = rbind(A, G), 
+                       cones = c(K_zero(2), K_expp(1)), 
+                       rhs = c(b, h))
+    x <- OP(objective = obj, constraints = lc, 
+            types = rep("C", 3), maximum = TRUE)
+
+    opt <- ROI_solve(x, solver = solver)
+    check("CP-05@01", equal(opt$solution , c(1, 1, exp(1))))
+}
+
+## POWP - Example - 1
+## max:  x + y + z
+## s.t.
+##      x^a * y ^ (1-a) >= |z|
+##      x == 4
+##      y == 4
+##      a == 1/2
+##
+## c(4, 4, 4)
+test_cp_07 <- function(solver) {
+    obj <- c(1, 1, 1)
+    A <- rbind(c(1, 0, 0),
+               c(0, 1, 0))
+    b <- c(4, 4)
+    G <- diag(x=-1, 3)
+    h <- rep(0, 3)
+
+    cc <- C_constraint(L = rbind(A, G), 
+                       cones = c(K_zero(2), K_powp(0.5)), 
+                       rhs = c(b, h))
+    x <- OP(objective = obj, constraints = cc, 
+            types = rep("C", 3), maximum = TRUE)
+
+    opt <- ROI_solve(x, solver=solver)
+    check("CP-07@01", equal(opt$solution, c(4, 4, 4)))
+    check("CP-07@02", equal(opt$objval, 12 ))
+}
+
+
+## QP - Example - 1
+##
+## from the quadprog package
+## (c) S original by Berwin A. Turlach R port by Andreas Weingessel
+## GPL-3
+##
+## min: -(0 5 0) %*% x + 1/2 x^T x
+## under the constraints:      A^T x >= b
+## with b = (-8,2,0)^T
+## and      (-4  2  0)
+##      A = (-3  1 -2)
+##          ( 0  0  1)
+## we can use solve.QP as follows:
+##
+## library(quadprog)
+## D <- diag(1, 3)
+## d <- c(0, 5, 0)
+## A <- cbind(c(-4, -3, 0),
+##            c( 2,  1, 0),
+##            c( 0, -2, 1))
+## b <- c(-8, 2, 0)
+##
+## sol <- solve.QP(D, d, A, bvec=b)
+## deparse(sol$solution)
+## deparse(sol$value)
+test_qp_01 <- function(solver) {
+    A <- cbind(c(-4, -3, 0),
+               c( 2,  1, 0),
+               c( 0, -2, 1))
+    x <- OP(Q_objective(diag(3), L =  c(0, -5, 0)),
+            L_constraint(L = t(A),
+                         dir = rep(">=", 3),
+                         rhs = c(-8, 2, 0)))
+
+    opt <- ROI_solve(x, solver = solver)
+    solution <- c(0.476190476190476, 1.04761904761905, 2.0952380952381)
+    check("QP-01@01", equal(opt$solution, solution) )
+    check("QP-01@02", equal(opt$objval, -2.38095238095238) )
+}
+
+## This Test detects non-conform objective functions.
+## minimize 0.5 x^2 - 2 x + y
+## s.t. x <= 3
+## Type 1:   0.5 x'Qx + c'Lx => c(2, 0)  objval=-2
+## Type 2:       x'Qx + c'Lx => c(3, 0)  objval=-3.75
+test_qp_02 <- function(solver) {
+    zero <- .Machine$double.eps * 100
+    qo <- Q_objective(Q=rbind(c(1, 0), c(0, zero)), L=c(-2, 1))
+    lc1 <- L_constraint(L=matrix(c(1, 0), nrow=1), dir="<=", rhs=3)
+    lc2 <- L_constraint(L=matrix(c(1, 0), nrow=1), dir=">=", rhs=0)
+    x <- OP(qo, c(lc1, lc2))
+
+    opt <- ROI_solve(x, solver=solver)
+    solution <- c(2, 0)
+    check("QP-02@01", equal(opt$solution, solution) )
+    check("QP-02@02", equal(opt$objval, -2) )
+}
+
+## as qp_01 but maximize
+test_qp_03 <- function(solver) {
+    A <- cbind(c(-4, -3, 0),
+               c( 2,  1, 0),
+               c( 0, -2, 1))
+    x <- OP(Q_objective(-diag(3), L = -c(0, -5, 0)),
+            L_constraint(L = t(A),
+                         dir = rep(">=", 3),
+                         rhs = c(-8, 2, 0)),
+            maximum = TRUE)
+
+    opt <- ROI_solve(x, solver=solver)
+    solution <- c(0.476190476190476, 1.04761904761905, 2.0952380952381)
+    check("QP-01@01", equal(opt$solution, solution) )
+    check("QP-01@02", equal(opt$objval, 2.38095238095238) )
+}
+
+
+
+if ( !any("clarabel" %in% names(ROI_registered_solvers())) ) {
+    ## This should never happen.
+    cat("ROI.plugin.clarabel could not be found among the registered solvers.\n")
+} else {
+    print("Start Testing!")
+    local({test_cp_01("clarabel")})
+    local({test_cp_02("clarabel")})
+    local({test_cp_03("clarabel")})
+    local({test_cp_04("clarabel")})
+    local({test_cp_05("clarabel")})
+    local({test_cp_07("clarabel")})
+    local({test_qp_01("clarabel")})
+    local({test_qp_02("clarabel")})
+    local({test_qp_03("clarabel")})
+}

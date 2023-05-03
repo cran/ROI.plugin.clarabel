@@ -1,0 +1,15 @@
+.add_status_codes <- function() {
+    solver <- ROI_plugin_get_solver_name( getPackageName() )
+    ROI_plugin_add_status_code_to_db( solver,  1L, "CLARABEL_UNSOLVED", "Problem is not solved (solver hasn't run).")
+    ROI_plugin_add_status_code_to_db( solver,  2L, "CLARABEL_SOLVED", "Solver terminated with a solution.", 0L)
+    ROI_plugin_add_status_code_to_db( solver,  3L, "CLARABEL_PRIMAL_INFEASIBLE", "Problem is primal infeasible.  Solution returned is a certificate of primal infeasibility.")
+    ROI_plugin_add_status_code_to_db( solver,  4L, "CLARABEL_DUAL_INFEASIBLE", "Problem is dual infeasible.  Solution returned is a certificate of dual infeasibility.")
+    ROI_plugin_add_status_code_to_db( solver,  5L, "CLARABEL_ALMOST_SOLVED", "Solver terminated with a solution (reduced accuracy)", 0L)
+    ROI_plugin_add_status_code_to_db( solver,  6L, "CLARABEL_ALMOST_PRIMAL_INFEASIBLE", "Problem is primal infeasible.  Solution returned is a certificate of primal infeasibility (reduced accuracy)")
+    ROI_plugin_add_status_code_to_db( solver,  7L, "CLARABEL_ALMOST_DUAL_INFEASIBLE", "Problem is dual infeasible.  Solution returned is a certificate of dual infeasibility (reduced accuracy)")
+    ROI_plugin_add_status_code_to_db( solver,  8L, "CLARABEL_MAX_ITERATIONS", "Iteration limit reached before solution or infeasibility certificate found")
+    ROI_plugin_add_status_code_to_db( solver,  9L, "CLARABEL_MAX_TIME", "Time limit reached before solution or infeasibility certificate found")
+    ROI_plugin_add_status_code_to_db( solver, 10L, "CLARABEL_NUMERICAL_ERROR", "Solver terminated with a numerical error")
+    ROI_plugin_add_status_code_to_db( solver, 11L, "CLARABEL_INSUFFICIENT_PROGRESS", "Solver terminated due to lack of progress")
+    invisible(TRUE)
+}
