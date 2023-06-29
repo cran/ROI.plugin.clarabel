@@ -1,5 +1,6 @@
 \name{Example-2}
 \title{SOCP 2}
+\alias{ROI.plugin.clarabel_Example_2}
 \description{
 The following example is also known as \code{Problem 10} from the 
 Hock-Schittkowski-Collection \code{Hock and Schittkowski (1981)}.
@@ -28,7 +29,7 @@ x
 ## Optimal solution found.
 ## The objective value is: -1.000000e+00
 solution(x)
-## [1] 1.996387e-10 1.000000e+00
+## [1] -4.622464e-16  1.000000e+00
 
 
 }

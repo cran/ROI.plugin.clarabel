@@ -1,5 +1,6 @@
 \name{Example-3}
 \title{SOCP 3}
+\alias{ROI.plugin.clarabel_Example_3}
 \description{
 The following example is originally from the \code{CVXOPT} 
 (\url{http://cvxopt.org/userguide/coneprog.html}) homepage.

@@ -1,6 +1,6 @@
 \name{Example-1}
 \title{SOCP 1}
-
+\alias{ROI.plugin.clarabel_Example_1}
 \description{
 \deqn{maximize \ \ x + y}
 \deqn{subject \ to \ \ x^2 + y^2 \leq 1}
