@@ -3,7 +3,7 @@
 \alias{ROI.plugin.clarabel_Example_3}
 \description{
 The following example is originally from the \code{CVXOPT} 
-(\url{http://cvxopt.org/userguide/coneprog.html}) homepage.
+(\url{https://cvxopt.org/userguide/coneprog.html}) homepage.
 \deqn{minimize \ \ -2x_1 + x_2 + 5 x_3}
 subject to 
 \deqn{
@@ -28,7 +28,7 @@ subject to
 \references{
 Andersen, Martin S and Dahl, Joachim and Vandenberghe, Lieven (2016)
 CVXOPT: A Python package for convex optimization, version 1.1.8,
-\url{http://cvxopt.org/}
+\url{https://cvxopt.org/}
 }
 
 \examples{

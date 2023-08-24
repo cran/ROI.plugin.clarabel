@@ -5,7 +5,7 @@ make_clarabel_signatures <- function()
                                constraints = c("X", "L", "C"),
                                types = c("C"),
                                bounds = c("X", "C", "V", "CV"),
-                               cones = c("X", "zero", "nonneg", "soc", "expp", "powp"),
+                               cones = c("X", "zero", "nonneg", "soc", "psd", "expp", "powp"),
                                maximum = c(TRUE, FALSE) )
 
 

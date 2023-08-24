@@ -247,6 +247,71 @@ test_qp_03 <- function(solver) {
     check("QP-01@02", equal(opt$objval, 2.38095238095238) )
 }
 
+## SDP - Example - 1
+## for the example definition see ROI.plugin.scs inst/doc
+## or http://cvxopt.org/userguide/coneprog.html
+test_cp_09 <- function(solver) {
+    ## this function or something similar should go into ROI
+    obj <- c(1, -1, 1)
+    A1 <- matrix(c(-7, -11, -11,  3), 2)
+    A2 <- matrix(c( 7, -18, -18,  8), 2)
+    A3 <- matrix(c(-2,  -8,  -8,  1), 2)
+    a  <- matrix(c(33,  -9,  -9, 26), 2)
+    B1 <- matrix(c(-21, -11,  0, -11,  10,   8,  0,    8, 5), 3)
+    B2 <- matrix(c(  0,  10,  16, 10, -10, -10,  16, -10, 3), 3)
+    B3 <- matrix(c( -5,   2, -17,  2,  -6,   8, -17,   8, 6), 3)
+    b  <- matrix(c( 14,   9,  40,  9,  91,  10,  40,  10,15), 3)
+
+    ## PSD matrices have to be vectorizedb <- ordered_cones$cone == scs_cones["psd"]
+    G1 <- vech(A1, A2, A3, lower=FALSE, scale=TRUE)
+    h1 <- vech(a, lower=FALSE, scale=TRUE)
+    G2 <- vech(B1, B2, B3, lower=FALSE, scale=TRUE)
+    h2 <- vech(b, lower=FALSE, scale=TRUE)
+    h <- c(h1, h2)
+    bounds <- V_bound(li=1:3, lb=rep(-Inf, 3)) 
+
+    x <- OP(objective = obj,
+            constraints = C_constraint(L = rbind(G1, G2), 
+                                       cones = K_psd(c(3, 6)), 
+                                       rhs = h),
+            types = rep("C", length(obj)),
+            bounds =  bounds,
+            maximum = FALSE)
+
+    opt <- ROI_solve(x, solver = solver)
+    
+    ## NOTE: The solutions I compare with are from cvxopt where I used the default settings,
+    ##       therefore it is possible that scs just provides a solution with a smaler eps
+    sol <- c(-0.36775, 1.89833, -0.88746)
+    check("CP-09@01", equal(solution(opt, "objval"), drop(obj %*% sol)))
+    
+    ## solution from cvxopt
+    ## [-3.68e-01 1.90e+00 -8.88e-01]
+    ## or c(-0.367666090041563, 1.89832827158511, -0.887550426343585)
+    check("CP-09@02", isTRUE(sum(abs(solution(opt) - sol)) < 1e-3))
+
+    ## [ 3.96e-03 -4.34e-03]
+    ## [-4.34e-03  4.75e-03]
+    ## c(0.00396107103000518, -0.00433836779348354, -0.00433836779348354,  0.00475162592559036) 
+    sol_psd_1 <- c( 0.00396107103000518, -0.00433836779348354, 
+                   -0.00433836779348354,  0.00475162592559036)
+
+    opt_sol_psd_1 <- as.numeric(as.matrix(solution(opt, "psd")[[1]]))
+    check("CP-09@03", isTRUE(sum(abs(opt_sol_psd_1 - sol_psd_1)) < 1e-5))
+    
+    ## [ 5.58e-02 -2.41e-03  2.42e-02]
+    ## [-2.41e-03  1.04e-04 -1.05e-03]
+    ## [ 2.42e-02 -1.05e-03  1.05e-02]
+    ## c(0.0558011514407859, -0.00240909203896524, 0.0242146296992217,  -0.00240909203896524, 
+    ##   0.000104021271556218, -0.00104543254168053,  0.0242146296992217, -0.00104543254168053, 
+    ##   0.0105078600239678) 
+    sol_psd_2 <- c( 0.0558011514407859, -0.00240909203896524,   0.0242146296992217,  
+                   -0.00240909203896524, 0.000104021271556218, -0.00104543254168053,  
+                    0.0242146296992217, -0.00104543254168053,   0.0105078600239678)
+    opt_sol_psd_2 <- as.numeric(as.matrix(solution(opt, "psd")[[2]]))
+    check("CP-09@04", isTRUE(max(abs(opt_sol_psd_2 - sol_psd_2)) < 1e-4))
+}
+
 
 
 if ( !any("clarabel" %in% names(ROI_registered_solvers())) ) {
@@ -263,4 +328,5 @@ if ( !any("clarabel" %in% names(ROI_registered_solvers())) ) {
     local({test_qp_01("clarabel")})
     local({test_qp_02("clarabel")})
     local({test_qp_03("clarabel")})
+    local({test_cp_09("clarabel")})
 }
